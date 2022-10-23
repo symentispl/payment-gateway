@@ -22,15 +22,23 @@ and install AWS SAM (we are using pip, there is something wrong with conda packa
 
     pip install aws-sam-cli
 
-If you want to see if SAM template works, you can run sync of lambda code with AWS.REMEMBER: you need to configure access to AWS, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
+If you want to see if SAM template works, you can run sync of lambda code with AWS or run local API instance.
+
+### Deploy lambda locally for testing
+
+    sam local start-api
+
+### Deploy lambda in AWS for testing
+
+REMEMBER: you need to configure access to AWS, https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html
 
     sam sync --stack-name sam-app --watch
 
 This will deploy lambda and redeploy it every time you change lambda code. HTTP URL
-lambda will be printed out in command output:
+lambda will be printed out in the command output:
 
     Key                 HelloWorldApi                                                               
     Description         API Gateway endpoint URL for Prod stage for Hello World function            
     Value               https://jfeln3n803.execute-api.eu-north-1.amazonaws.com/Prod/hello/ 
 
-Enter URL in browser to see if it works.
+Enter URL in a browser to see if it works.
