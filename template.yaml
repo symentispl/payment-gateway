@@ -19,6 +19,9 @@ Resources:
       Runtime: python3.9
       Architectures:
         - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CourseTable
       Events:
         Payment:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -52,6 +55,17 @@ Resources:
           AttributeType: S
       KeySchema: 
         - AttributeName: id
+          KeyType: HASH
+  CourseTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      TableName: courses
+      BillingMode: PAY_PER_REQUEST   
+      AttributeDefinitions: 
+        - AttributeName: course_name
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: course_name
           KeyType: HASH
 
 Outputs:
