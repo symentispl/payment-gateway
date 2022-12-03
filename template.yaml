@@ -97,9 +97,19 @@ Resources:
       AttributeDefinitions: 
         - AttributeName: course_name
           AttributeType: S
+        - AttributeName: course_site
+          AttributeType: S
       KeySchema: 
         - AttributeName: course_name
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: course_site_index
+          KeySchema:
+            - AttributeName: course_site
+              KeyType: HASH
+          Projection:
+            ProjectionType: INCLUDE
+            NonKeyAttributes: ["course_name","location","location_url","date","amount","is_active"]
   DiscountTable:
     Type: AWS::DynamoDB::Table
     Properties: 
@@ -111,9 +121,34 @@ Resources:
       KeySchema: 
         - AttributeName: discount_code
           KeyType: HASH
+  ApiGwAccountConfig:
+    Type: "AWS::ApiGateway::Account"
+    Properties:
+      CloudWatchRoleArn: !GetAtt "ApiGatewayLoggingRole.Arn"
+  ApiGatewayLoggingRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "apigateway.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - !Sub "arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs"
+  PaymentGatewayLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
   PaymentApiGateway:
     Type: AWS::Serverless::Api
     Properties:
+      AccessLogSetting: 
+        DestinationArn: !GetAtt PaymentGatewayLogGroup.Arn
+        Format: $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId $context.extendedRequestId
       StageName: prod
       Domain:
         CertificateArn: !Ref PaymentCertificateArn
@@ -123,6 +158,7 @@ Resources:
             - !Ref PaymentDomainName
         Route53:
           HostedZoneId: !Ref PaymentDomainHostedZoneId
+    DependsOn: ["ApiGwAccountConfig"]
   
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
