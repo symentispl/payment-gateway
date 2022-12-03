@@ -221,6 +221,8 @@ venv.bak/
 Thumbs.db
 ehthumbs.db
 ehthumbs_vista.db
+.github
+.vscode
 
 # Folder config file
 Desktop.ini

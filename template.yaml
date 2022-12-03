@@ -60,6 +60,24 @@ Resources:
             Path: /confirmation
             Method: post
             RestApiId: !Ref PaymentApiGateway
+  JsonCoursesFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: json_courses/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CourseTable
+      Events:
+        Confirmation:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /json_courses
+            Method: get
+            RestApiId: !Ref PaymentApiGateway
   PaymentTable:
     Type: AWS::DynamoDB::Table
     Properties: 
