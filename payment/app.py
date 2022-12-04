@@ -2,22 +2,18 @@ import boto3
 import uuid
 import hashlib
 import json
+import os
 
-def encode_description(description):
-    result = ""
-    for i in description:
-        if i.isupper():
-            result=result+"%20"+i.upper()
-        else:
-            result=result+i
-    return result[3:]
+region = os.environ['AWS_REGION']
+stage_prefix = os.environ['STAGE_PREFIX']
+
+dynamodb = boto3.resource('dynamodb', region_name=region)
+courses_table = dynamodb.Table(stage_prefix+'courses')
+discounts_table = dynamodb.Table(stage_prefix+'discounts')
 
 def lambda_handler(event, context=None):
     CODE = 'GqtXpYSEk160KOW9'
     ID = 31744
-    dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
-    courses_table = dynamodb.Table('courses')
-    discounts_table = dynamodb.Table('discounts')
     
     params = event.get('queryStringParameters')
     course_name = params.get('course_name')
@@ -41,3 +37,12 @@ def lambda_handler(event, context=None):
     response["body"] = json.dumps(dict())
     response["headers"] = {"Location": url}
     return response
+
+def encode_description(description):
+    result = ""
+    for i in description:
+        if i.isupper():
+            result=result+"%20"+i.upper()
+        else:
+            result=result+i
+    return result[3:]

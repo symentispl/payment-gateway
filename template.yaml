@@ -9,6 +9,12 @@ Description: >
 Globals:
   Function:
     Timeout: 3
+    Runtime: python3.9
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        STAGE_PREFIX : !Ref StagePrefix
 
 Parameters:
   PaymentDomainHostedZoneId: 
@@ -16,10 +22,22 @@ Parameters:
     Default: "Z03959971PI6LXD3U3GYA"
   PaymentDomainName: 
     Type: "String"
-    Default: payment.jvmperformance.pl
+    Default: test.payment.jvmperformance.pl
   PaymentCertificateArn:
     Type: "String"
-    Default: "arn:aws:acm:eu-central-1:653932013369:certificate/5b84c97f-2538-48f2-b62d-9dbf82e78703"
+    Default: "arn:aws:acm:eu-central-1:653932013369:certificate/7db121b9-b404-4af6-ad99-e972da300996"
+  Stage:
+    Type: "String"
+    Default: "test"
+    AllowedValues:
+      - "test"
+      - "prod"
+  StagePrefix:
+    Type: "String"
+    Default: "test."
+    AllowedValues:
+      - "test."
+      - "prod."
 
 Resources:
   PaymentFunction:
@@ -27,9 +45,6 @@ Resources:
     Properties:
       CodeUri: payment/
       Handler: app.lambda_handler
-      Runtime: python3.9
-      Architectures:
-        - x86_64
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref CourseTable
@@ -47,9 +62,6 @@ Resources:
     Properties:
       CodeUri: confirmation/
       Handler: app.lambda_handler
-      Runtime: python3.9
-      Architectures:
-        - x86_64
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PaymentTable
@@ -60,14 +72,11 @@ Resources:
             Path: /confirmation
             Method: post
             RestApiId: !Ref PaymentApiGateway
-  JsonCoursesFunction:
+  CoursesFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
       CodeUri: courses/
       Handler: app.lambda_handler
-      Runtime: python3.9
-      Architectures:
-        - x86_64
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref CourseTable
@@ -81,7 +90,7 @@ Resources:
   PaymentTable:
     Type: AWS::DynamoDB::Table
     Properties: 
-      TableName: payments
+      TableName: !Join ['',[!Ref StagePrefix,"payments"]]
       BillingMode: PAY_PER_REQUEST   
       AttributeDefinitions: 
         - AttributeName: id
@@ -92,7 +101,7 @@ Resources:
   CourseTable:
     Type: AWS::DynamoDB::Table
     Properties: 
-      TableName: courses
+      TableName: !Join ['',[!Ref StagePrefix,"courses"]]
       BillingMode: PAY_PER_REQUEST   
       AttributeDefinitions: 
         - AttributeName: course_name
@@ -113,7 +122,7 @@ Resources:
   DiscountTable:
     Type: AWS::DynamoDB::Table
     Properties: 
-      TableName: discounts
+      TableName: !Join ['',[!Ref StagePrefix,"discounts"]]
       BillingMode: PAY_PER_REQUEST   
       AttributeDefinitions: 
         - AttributeName: discount_code
@@ -149,13 +158,10 @@ Resources:
       AccessLogSetting: 
         DestinationArn: !GetAtt PaymentGatewayLogGroup.Arn
         Format: $context.identity.sourceIp $context.identity.caller $context.identity.user [$context.requestTime] "$context.httpMethod $context.resourcePath $context.protocol" $context.status $context.responseLength $context.requestId $context.extendedRequestId
-      StageName: prod
+      StageName: !Ref Stage
       Domain:
         CertificateArn: !Ref PaymentCertificateArn
-        DomainName: !Join
-          - ''
-          - - 'api.'
-            - !Ref PaymentDomainName
+        DomainName: !Ref PaymentDomainName
         Route53:
           HostedZoneId: !Ref PaymentDomainHostedZoneId
     DependsOn: ["ApiGwAccountConfig"]
