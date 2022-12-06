@@ -5,26 +5,30 @@ from email.mime.text import MIMEText
 from mako.template import Template
 from botocore.exceptions import ClientError
 
-
 region = os.environ['AWS_REGION']
 stage_prefix = os.environ['STAGE_PREFIX']
 
 smtp_secret_name = "ses-smtp-user"
+allowed_ip = ['195.149.229.109', '148.251.96.163', '178.32.201.77', '46.248.167.59', '46.29.19.106', '176.119.38.175']
 
 dynamodb = boto3.resource('dynamodb', region_name=region)
 payment_table = dynamodb.Table(stage_prefix+'payments')
 courses_table = dynamodb.Table(stage_prefix+'courses')
+mail_template=Template(filename='mail_template.html', input_encoding='UTF-8')
 
 def lambda_handler(event, context=None):
     item = dict()
     for i in parse_qsl(event['body']):
         item[i[0]] = i[1]
-    if event['requestContext']['identity']['sourceIp'] in ['195.149.229.109', '148.251.96.163', '178.32.201.77', '46.248.167.59', '46.29.19.106', '176.119.38.175']:
+    source_ip = event['requestContext']['identity']['sourceIp']
+    if source_ip in allowed_ip or stage_prefix == "test.":
         payment_table.put_item(Item=item)
         if item['tr_status'] == 'TRUE':
             course_name = item['tr_desc']
-            course = courses_table.get_item(Key = {'course_name': course_name})['Item']
-            send_email(item['tr_email'], course_name, item['tr_amount'], course['date'], course['location'])
+            response = courses_table.get_item(Key = {'course_name': course_name})
+            if "Item" in response:
+                course = response['Item']
+                send_email(item['tr_email'], course_name, item['tr_amount'], course['date'], course['location'])
     print(event)
     response = dict()
     response["statusCode"] = 200
@@ -33,14 +37,16 @@ def lambda_handler(event, context=None):
 
 def send_email(email_to, course_name, amount, date, location):
     smtp_secret = get_smtp_secret()
-    html = Template(filename='mail_template.html', input_encoding='UTF-8').render_unicode(course_name, amount, date, location).encode('UTF-8')
+    html = mail_template.render_unicode(course_name=course_name, amount=amount, date=date, location=location)
     email_from = 'no-replay@payment.jvmperformance.pl'  
     email_message = MIMEMultipart()
     email_message['From'], email_message['To'], email_message['Subject'] = email_from, email_to, "Zakup szkolenia Symentis"
+    print(email_message)
     email_message.attach(MIMEText(html, "html"))
 
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL("email-smtp.eu-central-1.amazonaws.com", 587, context=context) as server: #tutaj wpisujesz swoj email provider i port(?)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    with smtplib.SMTP("email-smtp.eu-central-1.amazonaws.com", 587) as server: #tutaj wpisujesz swoj email provider i port(?)
+        server.starttls(context=context)
         server.login(smtp_secret["smtp-username"], smtp_secret["smtp-password"])
         server.sendmail(email_from, email_to, email_message.as_string())
     
