@@ -5,7 +5,6 @@ import json
 dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
 courses_table = dynamodb.Table('courses')
 
-
 def lambda_handler(event, context=None):
     params = event.get('queryStringParameters')
     client = params.get('client')
