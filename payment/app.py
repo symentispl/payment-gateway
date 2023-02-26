@@ -35,7 +35,7 @@ def lambda_handler(event, context=None):
     
     md5string = '&'.join([str(ID),str(round(amount, 2)),str(crc),CODE])
     
-    url = f'https://secure.tpay.com?id=31744&amount={round(amount, 2)}&description={description}&crc={crc}&md5sum={hashlib.md5(md5string.encode("utf-8")).hexdigest()}'
+    url = f'https://secure.tpay.com?id=31744&amount={round(amount, 2)}&description={description}&crc={crc}&md5sum={hashlib.md5(md5string.encode("utf-8")).hexdigest()}&return_url=https://jvmperformance.pl/confirmation&return_error_url=https://jvmperformance.pl/payment_failed'
     response = dict()
     response["statusCode"] = 303
     response["body"] = json.dumps(dict())
