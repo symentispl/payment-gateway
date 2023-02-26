@@ -10,6 +10,17 @@ Globals:
   Function:
     Timeout: 3
 
+Parameters:
+  PaymentDomainHostedZoneId: 
+    Type: "String"
+    Default: "Z03959971PI6LXD3U3GYA"
+  PaymentDomainName: 
+    Type: "String"
+    Default: payment.jvmperformance.pl
+  PaymentCertificateArn:
+    Type: "String"
+    Default: "arn:aws:acm:us-east-1:653932013369:certificate/7923cd5a-f722-4591-88d6-4d0b20845c85"
+
 Resources:
   PaymentFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -30,6 +41,7 @@ Resources:
           Properties:
             Path: /payment
             Method: get
+            RestApiId: !Ref PaymentApiGateway
   ConfirmationFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -47,6 +59,7 @@ Resources:
           Properties:
             Path: /confirmation
             Method: post
+            RestApiId: !Ref PaymentApiGateway
   PaymentTable:
     Type: AWS::DynamoDB::Table
     Properties: 
@@ -80,14 +93,24 @@ Resources:
       KeySchema: 
         - AttributeName: discount_code
           KeyType: HASH
-
+  PaymentApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Domain:
+        CertificateArn: !Ref PaymentCertificateArn
+        DomainName: !Ref PaymentDomainName
+        Route53:
+          HostedZoneId: !Ref PaymentDomainHostedZoneId
+          HostedZoneName: !Ref PaymentDomainName
+  
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   PaymentGatewayApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/payment/"
+    Value: !Sub "https://${PaymentApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/payment/"
   PaymentFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt PaymentFunction.Arn
