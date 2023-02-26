@@ -30,7 +30,7 @@ class TestApiGateway:
 
         stacks = response["Stacks"]
         stack_outputs = stacks[0]["Outputs"]
-        api_outputs = [output for output in stack_outputs if output["OutputKey"] == "HelloWorldApi"]
+        api_outputs = [output for output in stack_outputs if output["OutputKey"] == "PaymentGatewayApi"]
 
         if not api_outputs:
             raise KeyError(f"HelloWorldAPI not found in stack {stack_name}")
@@ -39,7 +39,13 @@ class TestApiGateway:
 
     def test_api_gateway(self, api_gateway_url):
         """ Call the API Gateway endpoint and check the response """
-        response = requests.get(api_gateway_url)
+        response = requests.post("https://test.payment.jvmperformance.pl/confirmation"
+            ,data={
+                    "id"        : "3003",
+                    "tr_status" : "TRUE",
+                    "tr_desc"   : "tr_desc",
+                    "tr_email"  : "szymon.palka02@gmail.com",
+                    "tr_amount" : "300"})
 
         assert response.status_code == 200
-        assert response.json() == {"message": "hello world"}
+        assert response.content == b'TRUE'
