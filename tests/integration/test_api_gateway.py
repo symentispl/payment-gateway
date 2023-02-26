@@ -39,7 +39,13 @@ class TestApiGateway:
 
     def test_api_gateway(self, api_gateway_url):
         """ Call the API Gateway endpoint and check the response """
-        response = requests.get(api_gateway_url)
+        response = requests.post("https://test.payment.jvmperformance.pl/confirmation"
+            ,data={
+                    "id"        : "3001",
+                    "tr_status" : "TRUE",
+                    "tr_desc"   : "tr_desc",
+                    "tr_email"  : "jpalka@gmail.com",
+                    "tr_amount" : "300"})
 
         assert response.status_code == 200
-        assert response.json() == {"message": "hello world"}
+        assert response.content == b'TRUE'
