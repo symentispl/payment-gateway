@@ -77,6 +77,11 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref PaymentTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CourseTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: "arn:aws:secretsmanager:eu-central-1:653932013369:secret:ses-smtp-user-c0V9WF"
+
       Events:
         Confirmation:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
