@@ -1,10 +1,15 @@
 import json
+import os
 from urllib.parse import parse_qsl
 import boto3
 
+region = os.environ['AWS_REGION']
+stage_prefix = os.environ['STAGE_PREFIX']
+
+dynamodb = boto3.resource('dynamodb', region_name=region)
+table = dynamodb.Table(stage_prefix+'payments')
+
 def lambda_handler(event, context=None):
-    dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
-    table = dynamodb.Table('payments')
     item= dict()
     for i in parse_qsl(event['body']):
         item[i[0]] = i[1]

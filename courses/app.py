@@ -1,9 +1,13 @@
 import boto3
 from boto3.dynamodb.conditions import Key
 import json
+import os
 
-dynamodb = boto3.resource('dynamodb', region_name='eu-central-1')
-courses_table = dynamodb.Table('courses')
+region = os.environ['AWS_REGION']
+stage_prefix = os.environ['STAGE_PREFIX']
+
+dynamodb = boto3.resource('dynamodb', region_name=region)
+courses_table = dynamodb.Table(stage_prefix+'courses')
 
 def lambda_handler(event, context=None):
     params = event.get('queryStringParameters')
