@@ -1,14 +1,14 @@
-import os, smtplib, ssl, boto3,json
+import os,boto3,json
 from urllib.parse import parse_qsl
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from mako.template import Template
 from botocore.exceptions import ClientError
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 
 region = os.environ['AWS_REGION']
 stage_prefix = os.environ['STAGE_PREFIX']
 
-smtp_secret_name = "ses-smtp-user"
+send_grid_api_key_secret = "send-grid-api-key"
 allowed_ip = ['195.149.229.109', '148.251.96.163', '178.32.201.77', '46.248.167.59', '46.29.19.106', '176.119.38.175']
 
 dynamodb = boto3.resource('dynamodb', region_name=region)
@@ -36,21 +36,23 @@ def lambda_handler(event, context=None):
     return response
 
 def send_email(email_to, course_name, amount, date, location):
-    smtp_secret = get_smtp_secret()
+    print("sending confirmation email to {}".format(email_to))
     html = mail_template.render_unicode(course_name=course_name, amount=amount, date=date, location=location)
-    email_from = 'no-replay@payment.jvmperformance.pl'  
-    email_message = MIMEMultipart()
-    email_message['From'], email_message['To'], email_message['Subject'] = email_from, email_to, "Zakup szkolenia Symentis"
-    print(email_message)
-    email_message.attach(MIMEText(html, "html"))
-
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-    with smtplib.SMTP("email-smtp.eu-central-1.amazonaws.com", 587) as server: #tutaj wpisujesz swoj email provider i port(?)
-        server.starttls(context=context)
-        server.login(smtp_secret["smtp-username"], smtp_secret["smtp-password"])
-        server.sendmail(email_from, email_to, email_message.as_string())
+    email_from = 'jaroslaw.palka@symentis.pl'  
+    message = Mail(
+    from_email=email_from,
+    to_emails=email_to,
+    subject='Zakup szkolenia',
+    html_content=html)
+    try:
+        sendgrid_api_key = get_sendgrid_api_key()
+        sg = SendGridAPIClient(sendgrid_api_key)
+        response = sg.send(message)
+        print("confirmation mail sent with response {}".format(response))
+    except Exception as e:
+        print("confirmation sent failed with message {}".format(e.message))
     
-def get_smtp_secret():
+def get_sendgrid_api_key():
     session = boto3.session.Session()
     client = session.client(
         service_name='secretsmanager',
@@ -58,7 +60,7 @@ def get_smtp_secret():
     )
     try:
         get_secret_value_response = client.get_secret_value(
-            SecretId=smtp_secret_name
+            SecretId=send_grid_api_key_secret
         )
     except ClientError as e:
         # For a list of exceptions thrown, see
@@ -66,4 +68,4 @@ def get_smtp_secret():
         raise e
     # Decrypts secret using the associated KMS key.
     secret = get_secret_value_response['SecretString']
-    return json.loads(secret)
+    return json.loads(secret)["api-key"]

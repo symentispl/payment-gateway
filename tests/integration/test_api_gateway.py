@@ -41,10 +41,10 @@ class TestApiGateway:
         """ Call the API Gateway endpoint and check the response """
         response = requests.post("https://test.payment.jvmperformance.pl/confirmation"
             ,data={
-                    "id"        : "3001",
+                    "id"        : "3003",
                     "tr_status" : "TRUE",
                     "tr_desc"   : "tr_desc",
-                    "tr_email"  : "jpalka@gmail.com",
+                    "tr_email"  : "szymon.palka02@gmail.com",
                     "tr_amount" : "300"})
 
         assert response.status_code == 200
