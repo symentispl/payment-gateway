@@ -19,7 +19,7 @@ Parameters:
     Default: payment.jvmperformance.pl
   PaymentCertificateArn:
     Type: "String"
-    Default: "arn:aws:acm:us-east-1:653932013369:certificate/7923cd5a-f722-4591-88d6-4d0b20845c85"
+    Default: "arn:aws:acm:eu-central-1:653932013369:certificate/5b84c97f-2538-48f2-b62d-9dbf82e78703"
 
 Parameters:
   PaymentDomainHostedZoneId: 
@@ -75,7 +75,7 @@ Resources:
   JsonCoursesFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      CodeUri: json_courses/
+      CodeUri: courses/
       Handler: app.lambda_handler
       Runtime: python3.9
       Architectures:
@@ -87,7 +87,7 @@ Resources:
         Confirmation:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /json_courses
+            Path: /courses
             Method: get
             RestApiId: !Ref PaymentApiGateway
   PaymentTable:
@@ -129,10 +129,12 @@ Resources:
       StageName: prod
       Domain:
         CertificateArn: !Ref PaymentCertificateArn
-        DomainName: !Ref PaymentDomainName
+        DomainName: !Join
+          - ''
+          - - 'api.'
+            - !Ref PaymentDomainName
         Route53:
           HostedZoneId: !Ref PaymentDomainHostedZoneId
-          HostedZoneName: !Ref PaymentDomainName
   
   PaymentApiGateway:
     Type: AWS::Serverless::Api
